@@ -166,11 +166,11 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-[1920px] mx-auto px-4 lg:px-8 py-3 flex flex-col xl:flex-row items-center justify-between gap-4">
         {/* Left: Isuzu Logo and Dashboard Identity */}
         <div className="flex items-center space-x-4 w-full xl:w-auto">
-          <div className="h-12 px-3 rounded-xl bg-white flex items-center justify-center border-2 border-[#ED1C24] shadow-md shadow-[#ED1C24]/10 overflow-hidden">
+          <div className="h-12 px-2 flex items-center justify-center overflow-hidden">
             <img
               src="/dashboard-logo.png"
               alt="ISUZU Logo"
-              className="h-8 max-w-[140px] object-contain"
+              className="h-9 max-w-[160px] object-contain"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/isuzu-logo.webp';
               }}

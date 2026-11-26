@@ -323,6 +323,10 @@ if os.path.isdir(_FRONTEND_DIST):
     def isuzu_icon():
         return FileResponse(os.path.join(_FRONTEND_DIST, "isuzu-icon.webp"))
 
+    @app.get("/dashboard-logo.png")
+    def dashboard_logo():
+        return FileResponse(os.path.join(_FRONTEND_DIST, "dashboard-logo.png"))
+
     # Catch-all: serve React index.html for all non-API, non-WS routes (SPA routing)
     @app.get("/{full_path:path}")
     def serve_react_app(full_path: str):

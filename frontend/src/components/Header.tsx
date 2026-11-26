@@ -168,7 +168,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center space-x-4 w-full xl:w-auto">
           <div className="h-12 px-3 rounded-xl bg-white flex items-center justify-center border-2 border-[#ED1C24] shadow-md shadow-[#ED1C24]/10 overflow-hidden">
             <img
-              src="/isuzu-featured.webp"
+              src="/dashboard-logo.png"
               alt="ISUZU Logo"
               className="h-8 max-w-[140px] object-contain"
               onError={(e) => {

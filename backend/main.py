@@ -323,6 +323,10 @@ if os.path.isdir(_FRONTEND_DIST):
     def isuzu_icon():
         return FileResponse(os.path.join(_FRONTEND_DIST, "isuzu-icon.webp"))
 
+    @app.get("/isuzu-icon.png")
+    def isuzu_icon_png():
+        return FileResponse(os.path.join(_FRONTEND_DIST, "isuzu-icon.png"))
+
     @app.get("/dashboard-logo.png")
     def dashboard_logo():
         return FileResponse(os.path.join(_FRONTEND_DIST, "dashboard-logo.png"))

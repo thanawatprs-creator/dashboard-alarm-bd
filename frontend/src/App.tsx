@@ -1,26 +1,59 @@
-import React, { useState } from 'react';
-import { Machine } from './types';
+import React, { useState, useEffect } from 'react';
+import { AuthUser, Machine } from './types';
 import { useRealtimeDashboard } from './hooks/useRealtimeDashboard';
 import { Header } from './components/Header';
+import { PMViewPage } from './pages/PMViewPage';
+import { ProductionPage } from './pages/ProductionPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ManagementPage } from './pages/ManagementPage';
 import { AlarmHistoryPage } from './pages/AlarmHistoryPage';
 import { MachineDetailModal } from './components/MachineDetailModal';
 import { SimulationControlModal } from './components/SimulationControlModal';
+import { LoginModal } from './components/LoginModal';
 import {
   AlertTriangle,
-  Wifi,
   WifiOff,
   Radio,
   CheckCircle2,
   X,
   Tag,
-  MapPin,
-  Bell
+  MapPin
 } from 'lucide-react';
 
+const AUTH_STORAGE_KEY = 'isuzu_dashboard_auth_user';
+
 export const App: React.FC = () => {
+  // Auth state (persisted in localStorage)
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
+    try {
+      const saved = localStorage.getItem(AUTH_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Active department portal: 'pm' (default public 4-area view), 'production', or 'it'
+  const [activePortal, setActivePortal] = useState<'pm' | 'production' | 'it'>(() => {
+    try {
+      const saved = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (saved) {
+        const user: AuthUser = JSON.parse(saved);
+        if (user.role === 'IT') return 'it';
+        if (user.role === 'PRODUCTION') return 'production';
+      }
+    } catch {
+      // ignore
+    }
+    return 'pm';
+  });
+
+  // Sub-tab inside IT Portal
   const [currentTab, setCurrentTab] = useState<'dashboard' | 'management' | 'history'>('dashboard');
+
+  // Login Modal state
+  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
+  const [loginTargetRole, setLoginTargetRole] = useState<'PRODUCTION' | 'IT'>('PRODUCTION');
 
   // Real-Time Data & WebSocket Hook
   const {
@@ -32,7 +65,6 @@ export const App: React.FC = () => {
     connectionStatus,
     loading,
     lastUpdated,
-    error,
     notifications,
     dismissNotification,
     refreshData,
@@ -48,12 +80,52 @@ export const App: React.FC = () => {
     ? machines.find((m) => m.machine_id === selectedMachine.machine_id) || selectedMachine
     : null;
 
+  useEffect(() => {
+    if (authUser) {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
+    } else {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    }
+  }, [authUser]);
+
+  const handleOpenLogin = (role: 'PRODUCTION' | 'IT') => {
+    setLoginTargetRole(role);
+    setIsLoginOpen(true);
+  };
+
+  const handleLoginSuccess = (user: AuthUser) => {
+    setAuthUser(user);
+    setIsLoginOpen(false);
+    if (user.role === 'IT') {
+      setActivePortal('it');
+      setCurrentTab('dashboard');
+    } else if (user.role === 'PRODUCTION') {
+      setActivePortal('production');
+    }
+  };
+
+  const handleLogout = () => {
+    setAuthUser(null);
+    setActivePortal('pm');
+    setIsSimModalOpen(false);
+  };
+
+  // Can current user edit machines in detail modal? (Only Production & IT)
+  const canEditMachines =
+    activePortal !== 'pm' &&
+    (authUser?.role === 'IT' || authUser?.role === 'PRODUCTION');
+
   return (
     <div className="min-h-screen bg-[#0A0D14] text-slate-100 flex flex-col font-sans selection:bg-[#ED1C24] selection:text-white">
-      {/* Top Industrial Header with Navigation, Live Thai Clock & WebSocket Status Indicator */}
+      {/* Top Industrial Header with Department Role Switcher & WebSocket Status */}
       <Header
+        activePortal={activePortal}
+        onSelectPortal={setActivePortal}
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
+        authUser={authUser}
+        onOpenLogin={handleOpenLogin}
+        onLogout={handleLogout}
         lastUpdated={lastUpdated}
         onRefresh={refreshData}
         connectionStatus={connectionStatus}
@@ -87,7 +159,7 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* Real-Time Live Alarm Notification Toast Banners (Float at Top Right) */}
+      {/* Real-Time Live Alarm Notification Toast Banners */}
       <div className="fixed top-24 right-4 z-50 flex flex-col space-y-2 pointer-events-none max-w-sm w-full">
         {notifications.map((notif) => (
           <div
@@ -149,34 +221,58 @@ export const App: React.FC = () => {
           </div>
         ) : (
           <>
-            {currentTab === 'dashboard' && (
-              <DashboardPage
-                summary={summary}
-                statistics={statistics}
+            {/* 1. PM View (4 Areas, Read-only) */}
+            {activePortal === 'pm' && (
+              <PMViewPage
                 machines={machines}
-                activeAlarms={activeAlarms}
                 onSelectMachine={(m) => setSelectedMachine(m)}
+                currentTimeMs={currentTimeMs}
+              />
+            )}
+
+            {/* 2. Production Portal (Requires Production or IT login) */}
+            {activePortal === 'production' && authUser && (
+              <ProductionPage
+                machines={machines}
+                authUser={authUser}
                 onRefresh={refreshData}
                 currentTimeMs={currentTimeMs}
               />
             )}
 
-            {currentTab === 'management' && (
-              <ManagementPage
-                machines={machines}
-                onSelectMachine={(m) => setSelectedMachine(m)}
-                onRefresh={refreshData}
-                simulationStatus={simulationStatus}
-                currentTimeMs={currentTimeMs}
-              />
-            )}
+            {/* 3. IT Admin Portal (Requires IT login) */}
+            {activePortal === 'it' && authUser?.role === 'IT' && (
+              <>
+                {currentTab === 'dashboard' && (
+                  <DashboardPage
+                    summary={summary}
+                    statistics={statistics}
+                    machines={machines}
+                    activeAlarms={activeAlarms}
+                    onSelectMachine={(m) => setSelectedMachine(m)}
+                    onRefresh={refreshData}
+                    currentTimeMs={currentTimeMs}
+                  />
+                )}
 
-            {currentTab === 'history' && <AlarmHistoryPage />}
+                {currentTab === 'management' && (
+                  <ManagementPage
+                    machines={machines}
+                    onSelectMachine={(m) => setSelectedMachine(m)}
+                    onRefresh={refreshData}
+                    simulationStatus={simulationStatus}
+                    currentTimeMs={currentTimeMs}
+                  />
+                )}
+
+                {currentTab === 'history' && <AlarmHistoryPage />}
+              </>
+            )}
           </>
         )}
       </main>
 
-      {/* Industrial Footer (Isuzu Engine Theme) */}
+      {/* Industrial Footer */}
       <footer className="bg-[#0E131F] border-t border-[#253248] px-4 lg:px-8 py-3.5 text-xs font-mono text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-2xl">
         <div className="flex items-center space-x-3">
           <span className="font-bold text-white flex items-center space-x-1.5">
@@ -198,15 +294,26 @@ export const App: React.FC = () => {
         onClose={() => setSelectedMachine(null)}
         onStatusUpdated={refreshData}
         currentTimeMs={currentTimeMs}
+        canEdit={canEditMachines}
       />
 
-      {/* Central Simulation Control Modal */}
-      <SimulationControlModal
-        isOpen={isSimModalOpen}
-        onClose={() => setIsSimModalOpen(false)}
-        simulationStatus={simulationStatus}
-        machines={machines}
-        onTriggerSuccess={refreshData}
+      {/* Central Simulation Control Modal (IT Only) */}
+      {authUser?.role === 'IT' && (
+        <SimulationControlModal
+          isOpen={isSimModalOpen}
+          onClose={() => setIsSimModalOpen(false)}
+          simulationStatus={simulationStatus}
+          machines={machines}
+          onTriggerSuccess={refreshData}
+        />
+      )}
+
+      {/* Department Login Modal (Production & IT) */}
+      <LoginModal
+        isOpen={isLoginOpen}
+        targetRole={loginTargetRole}
+        onClose={() => setIsLoginOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
       />
     </div>
   );

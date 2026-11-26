@@ -1,22 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import {
   Activity,
-  AlertTriangle,
   Clock,
   RefreshCw,
   Sliders,
-  Server,
   Layers,
   FileText,
   Radio,
   Wifi,
-  WifiOff
+  WifiOff,
+  Monitor,
+  Factory,
+  ShieldCheck,
+  LogOut,
+  Lock
 } from 'lucide-react';
-import { WebSocketConnectionStatus } from '../types';
+import { AuthUser, WebSocketConnectionStatus } from '../types';
 
 interface HeaderProps {
+  activePortal: 'pm' | 'production' | 'it';
+  onSelectPortal: (portal: 'pm' | 'production' | 'it') => void;
   currentTab: 'dashboard' | 'management' | 'history';
   onSelectTab: (tab: 'dashboard' | 'management' | 'history') => void;
+  authUser: AuthUser | null;
+  onOpenLogin: (role: 'PRODUCTION' | 'IT') => void;
+  onLogout: () => void;
   lastUpdated: string | null;
   onRefresh: () => void;
   connectionStatus: WebSocketConnectionStatus;
@@ -24,8 +32,13 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  activePortal,
+  onSelectPortal,
   currentTab,
   onSelectTab,
+  authUser,
+  onOpenLogin,
+  onLogout,
   lastUpdated,
   onRefresh,
   connectionStatus,
@@ -104,7 +117,6 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Top Banner: Isuzu Engine Notice & Demo Warning */}
       <div className="bg-[#121826] border-b border-[#253248] px-4 py-1.5 flex flex-wrap items-center justify-between text-xs text-slate-300 font-medium gap-2">
         <div className="flex items-center space-x-2">
-          {/* Isuzu Red Corporate Tag */}
           <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#ED1C24] text-white font-mono font-black tracking-wider uppercase text-[10px] shadow-sm">
             ISUZU ENGINE
           </span>
@@ -115,27 +127,51 @@ export const Header: React.FC<HeaderProps> = ({
             ระบบจำลองเครื่องจักรขัดข้อง &bull; SQLite Data Engine &bull; ไม่ได้เชื่อมต่อกับ IBM Maximo
           </span>
         </div>
+
         <div className="flex items-center space-x-3 text-slate-400 text-xs">
-          <span className="hidden md:inline text-slate-400">Isuzu Engine Manufacturing (Thailand) Co., Ltd.</span>
+          {/* Active Logged-in Badge */}
+          {authUser ? (
+            <div className="flex items-center space-x-2 bg-[#0A0D14] border border-[#253248] rounded-full px-3 py-0.5">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  authUser.role === 'IT' ? 'bg-[#ED1C24]' : 'bg-amber-400'
+                }`}
+              ></span>
+              <span className="font-mono text-[11px] text-white font-bold">
+                {authUser.displayName} ({authUser.username})
+              </span>
+              <button
+                onClick={onLogout}
+                className="text-[10px] font-mono text-red-400 hover:text-red-300 flex items-center space-x-1 border-l border-slate-700 pl-2"
+                title="ออกจากระบบ"
+              >
+                <LogOut className="w-3 h-3" />
+                <span>ออก</span>
+              </button>
+            </div>
+          ) : (
+            <span className="text-[11px] font-mono text-slate-400">
+              โหมดสาธารณะ: <strong className="text-emerald-400">ฝ่าย PM (4 พื้นที่)</strong>
+            </span>
+          )}
+
           <span className={`inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-mono font-bold ${conn.badgeClass}`}>
             <span className={`w-2 h-2 rounded-full ${conn.dotClass}`}></span>
-            <span>{conn.label}</span>
+            <span className="hidden sm:inline">{conn.label}</span>
           </span>
         </div>
       </div>
 
-      {/* Main Header Bar with Isuzu Logo & Red Highlights */}
-      <div className="max-w-[1920px] mx-auto px-4 lg:px-8 py-3 flex flex-col lg:flex-row items-center justify-between gap-4">
+      {/* Main Header Bar */}
+      <div className="max-w-[1920px] mx-auto px-4 lg:px-8 py-3 flex flex-col xl:flex-row items-center justify-between gap-4">
         {/* Left: Isuzu Logo and Dashboard Identity */}
-        <div className="flex items-center space-x-4 w-full lg:w-auto">
-          {/* Brand Logo Container */}
+        <div className="flex items-center space-x-4 w-full xl:w-auto">
           <div className="h-12 px-3 rounded-xl bg-white flex items-center justify-center border-2 border-[#ED1C24] shadow-md shadow-[#ED1C24]/10 overflow-hidden">
             <img
               src="/isuzu-featured.webp"
               alt="ISUZU Logo"
               className="h-8 max-w-[140px] object-contain"
               onError={(e) => {
-                // Fallback to isuzu-logo.webp if featured fails
                 (e.target as HTMLImageElement).src = '/isuzu-logo.webp';
               }}
             />
@@ -153,59 +189,122 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-400 font-mono tracking-wide">
-              ระบบตรวจจับการแจ้งเตือนเครื่องจักรขัดข้อง &bull; PM SHOP MAINTENANCE
+              ระบบตรวจจับการแจ้งเตือนเครื่องจักรขัดข้อง &bull; ISUZU ENGINE MANUFACTURING
             </p>
           </div>
         </div>
 
-        {/* Center: Navigation Tabs (Isuzu Themed) */}
-        <div className="flex items-center bg-[#0A0D14] p-1 rounded-xl border border-[#253248] w-full sm:w-auto justify-center">
-          <button
-            onClick={() => onSelectTab('dashboard')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold tracking-wider transition-all ${
-              currentTab === 'dashboard'
-                ? 'bg-[#ED1C24] text-white shadow-lg shadow-[#ED1C24]/30 font-bold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-            }`}
-          >
-            <Activity className="w-4 h-4" />
-            <span>แดชบอร์ดหลัก</span>
-          </button>
-          <button
-            onClick={() => onSelectTab('management')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold tracking-wider transition-all ${
-              currentTab === 'management'
-                ? 'bg-[#ED1C24] text-white shadow-lg shadow-[#ED1C24]/30 font-bold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            <span>จัดการเครื่องจักร (10 เครื่อง)</span>
-          </button>
-          <button
-            onClick={() => onSelectTab('history')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold tracking-wider transition-all ${
-              currentTab === 'history'
-                ? 'bg-[#ED1C24] text-white shadow-lg shadow-[#ED1C24]/30 font-bold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>ประวัติการแจ้งเตือน</span>
-          </button>
+        {/* Center: Department Role Switcher + IT Sub-Tabs */}
+        <div className="flex flex-col items-center gap-2 w-full xl:w-auto">
+          {/* Primary Department Switcher */}
+          <div className="flex flex-wrap items-center bg-[#0A0D14] p-1 rounded-xl border border-[#253248] justify-center gap-1">
+            <button
+              onClick={() => onSelectPortal('pm')}
+              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-mono font-bold transition-all ${
+                activePortal === 'pm'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+              }`}
+            >
+              <Monitor className="w-3.5 h-3.5" />
+              <span>ฝ่าย PM (4 พื้นที่)</span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (authUser && (authUser.role === 'PRODUCTION' || authUser.role === 'IT')) {
+                  onSelectPortal('production');
+                } else {
+                  onOpenLogin('PRODUCTION');
+                }
+              }}
+              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-mono font-bold transition-all ${
+                activePortal === 'production'
+                  ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+              }`}
+            >
+              <Factory className="w-3.5 h-3.5" />
+              <span>ฝ่าย Production</span>
+              {!(authUser && (authUser.role === 'PRODUCTION' || authUser.role === 'IT')) && (
+                <Lock className="w-3 h-3 opacity-75" />
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                if (authUser && authUser.role === 'IT') {
+                  onSelectPortal('it');
+                } else {
+                  onOpenLogin('IT');
+                }
+              }}
+              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-mono font-bold transition-all ${
+                activePortal === 'it'
+                  ? 'bg-[#ED1C24] text-white shadow-lg shadow-[#ED1C24]/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>ฝ่าย IT (ผู้ดูแลระบบ)</span>
+              {!(authUser && authUser.role === 'IT') && (
+                <Lock className="w-3 h-3 opacity-75" />
+              )}
+            </button>
+          </div>
+
+          {/* IT Sub-navigation Tabs (Visible only when IT portal is active) */}
+          {activePortal === 'it' && authUser?.role === 'IT' && (
+            <div className="flex flex-wrap items-center bg-[#121826] p-1 rounded-xl border border-[#253248] justify-center gap-1">
+              <button
+                onClick={() => onSelectTab('dashboard')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wider transition-all ${
+                  currentTab === 'dashboard'
+                    ? 'bg-[#ED1C24] text-white font-bold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                }`}
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span>แดชบอร์ดภาพรวม</span>
+              </button>
+              <button
+                onClick={() => onSelectTab('management')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wider transition-all ${
+                  currentTab === 'management'
+                    ? 'bg-[#ED1C24] text-white font-bold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>จัดการเครื่องจักร (10 เครื่อง)</span>
+              </button>
+              <button
+                onClick={() => onSelectTab('history')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wider transition-all ${
+                  currentTab === 'history'
+                    ? 'bg-[#ED1C24] text-white font-bold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>ประวัติการแจ้งเตือน</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Right: Digital Clock & Isuzu Controls */}
-        <div className="flex items-center space-x-3 w-full lg:w-auto justify-end">
-          {/* Simulation Console Trigger */}
-          <button
-            onClick={onOpenSimulation}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-[#ED1C24]/10 hover:bg-[#ED1C24]/20 border border-[#ED1C24]/30 text-red-300 text-xs font-mono font-medium transition-all"
-            title="เปิดแผงควบคุมการจำลองข้อมูล"
-          >
-            <Sliders className="w-3.5 h-3.5 text-[#ED1C24]" />
-            <span className="hidden sm:inline">ควบคุมการจำลอง</span>
-          </button>
+        {/* Right: Digital Clock & IT Simulation Console */}
+        <div className="flex items-center space-x-3 w-full xl:w-auto justify-end">
+          {authUser?.role === 'IT' && (
+            <button
+              onClick={onOpenSimulation}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-[#ED1C24]/10 hover:bg-[#ED1C24]/20 border border-[#ED1C24]/30 text-red-300 text-xs font-mono font-medium transition-all"
+              title="เปิดแผงควบคุมการจำลองข้อมูล (เฉพาะฝ่าย IT)"
+            >
+              <Sliders className="w-3.5 h-3.5 text-[#ED1C24]" />
+              <span className="hidden sm:inline">ควบคุมการจำลอง</span>
+            </button>
+          )}
 
           {/* Sync Button */}
           <div className="flex items-center space-x-2 bg-[#0A0D14] px-3 py-1.5 rounded-lg border border-[#253248]">
@@ -226,7 +325,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Digital Clock Box with Isuzu Red Accents */}
+          {/* Digital Clock Box */}
           <div className="bg-[#0A0D14] px-3 py-1.5 rounded-lg border border-[#253248] flex items-center space-x-2 font-mono">
             <Clock className="w-4 h-4 text-[#ED1C24]" />
             <div className="text-right leading-none">

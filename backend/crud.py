@@ -306,6 +306,15 @@ def update_machine_status(
     prev_status = machine.status
     target_status = update_data.status.upper()
 
+    # Normalize optional custom start_time to naive UTC
+    custom_start: Optional[datetime] = None
+    if update_data.start_time is not None:
+        dt = update_data.start_time
+        if dt.tzinfo is not None:
+            from datetime import timezone
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        custom_start = dt
+
     if target_status not in ["NORMAL", "BREAKDOWN", "STOPPED"]:
         raise ValueError(f"Invalid status: {target_status}")
 
@@ -322,7 +331,9 @@ def update_machine_status(
             random_seq = random.randint(1000, 9999)
             new_sr = f"SR-2026-{random_seq}"
         machine.sr_number = new_sr
-        if prev_status != "BREAKDOWN":
+        if custom_start is not None:
+            machine.breakdown_start_time = custom_start
+        elif prev_status != "BREAKDOWN":
             machine.breakdown_start_time = now
         machine.stopped_start_time = None
         event_desc = f"Breakdown reported [{new_sr}]: {desc_text}"
@@ -334,7 +345,9 @@ def update_machine_status(
         machine.breakdown_description = None
         machine.sr_number = None
         machine.breakdown_start_time = None
-        if prev_status != "STOPPED":
+        if custom_start is not None:
+            machine.stopped_start_time = custom_start
+        elif prev_status != "STOPPED":
             machine.stopped_start_time = now
         event_desc = f"Machine stopped: {reason_text}"
 

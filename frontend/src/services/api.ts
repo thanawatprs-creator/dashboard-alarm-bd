@@ -28,12 +28,18 @@ export const api = {
     machineId: string,
     status: MachineStatus,
     description?: string,
-    reason?: string
+    reason?: string,
+    startTime?: string
   ): Promise<Machine> {
     const res = await fetch(`${API_BASE}/machines/${encodeURIComponent(machineId)}/status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, description, reason }),
+      body: JSON.stringify({
+        status,
+        description,
+        reason,
+        start_time: startTime || undefined,
+      }),
     });
     if (!res.ok) throw new Error(`Failed to update machine status: ${res.statusText}`);
     return res.json();

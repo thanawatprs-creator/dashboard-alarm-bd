@@ -2,6 +2,15 @@ export type MachineStatus = 'NORMAL' | 'BREAKDOWN' | 'STOPPED';
 
 export type WebSocketConnectionStatus = 'CONNECTED' | 'RECONNECTING' | 'DISCONNECTED';
 
+export type UserRole = 'PM' | 'PRODUCTION' | 'IT';
+
+export interface AuthUser {
+  username: string;
+  displayName: string;
+  role: UserRole;
+  department: string;
+}
+
 export interface Machine {
   id: number;
   machine_id: string; // MC-001 ... MC-010

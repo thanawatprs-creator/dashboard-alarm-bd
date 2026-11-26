@@ -34,6 +34,7 @@ class MachineStatusUpdate(BaseModel):
     status: str = Field(..., description="NORMAL, BREAKDOWN, or STOPPED")
     description: Optional[str] = Field(None, description="Breakdown description (if BREAKDOWN)")
     reason: Optional[str] = Field(None, description="Stop reason (if STOPPED)")
+    start_time: Optional[datetime] = Field(None, description="Optional custom start time for breakdown or stopped status")
 
 
 class DashboardSummary(BaseModel):

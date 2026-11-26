@@ -23,13 +23,15 @@ interface MachineDetailModalProps {
   onClose: () => void;
   onStatusUpdated: () => void;
   currentTimeMs: number;
+  canEdit?: boolean;
 }
 
 export const MachineDetailModal: React.FC<MachineDetailModalProps> = ({
   machine,
   onClose,
   onStatusUpdated,
-  currentTimeMs
+  currentTimeMs,
+  canEdit = true
 }) => {
   if (!machine) return null;
 
@@ -153,16 +155,18 @@ export const MachineDetailModal: React.FC<MachineDetailModalProps> = ({
           >
             ข้อมูลเครื่องจักร
           </button>
-          <button
-            onClick={() => setActiveTab('actions')}
-            className={`py-3 px-4 text-xs font-mono font-bold tracking-wider uppercase border-b-2 transition-all ${
-              activeTab === 'actions'
-                ? 'border-[#ED1C24] text-white'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            เปลี่ยนสถานะด้วยตนเอง (Manual Override)
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => setActiveTab('actions')}
+              className={`py-3 px-4 text-xs font-mono font-bold tracking-wider uppercase border-b-2 transition-all ${
+                activeTab === 'actions'
+                  ? 'border-[#ED1C24] text-white'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              เปลี่ยนสถานะด้วยตนเอง (Manual Override)
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('history')}
             className={`py-3 px-4 text-xs font-mono font-bold tracking-wider uppercase border-b-2 transition-all ${

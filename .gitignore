@@ -15,11 +15,17 @@ env/
 
 # Node / Frontend
 frontend/node_modules/
-frontend/dist/
 frontend/.vite/
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
+
+# Root node_modules (if any)
+node_modules/
+
+# Frontend dist is built on Render, exclude locally ONLY if you prefer
+# Comment this out to include pre-built dist in repo
+# frontend/dist/
 
 # Environment & IDE
 .env
@@ -28,3 +34,4 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+

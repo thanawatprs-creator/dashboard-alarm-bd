@@ -2,11 +2,14 @@
 FastAPI application for Dashboard Alarm BD – Phase 1 (Real-Time WebSocket Edition).
 """
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from .database import engine, Base, get_db, SessionLocal
@@ -88,7 +91,6 @@ def root():
         "docs": "/docs",
         "timestamp": datetime.utcnow()
     }
-
 
 # ----------------------------------------------------
 # WebSocket Real-Time Endpoint
@@ -292,3 +294,39 @@ async def trigger_manual_simulation(
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# -------------------------------------------------------
+# Serve React Frontend static files (for Render production)
+# Build the frontend first: cd frontend && npm run build
+# -------------------------------------------------------
+_FRONTEND_DIST = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
+
+if os.path.isdir(_FRONTEND_DIST):
+    # Serve static assets (JS, CSS, images)
+    app.mount("/assets", StaticFiles(directory=os.path.join(_FRONTEND_DIST, "assets")), name="assets")
+
+    # Serve any other static files in /dist (favicon, logos, etc.)
+    @app.get("/favicon.webp")
+    def favicon():
+        return FileResponse(os.path.join(_FRONTEND_DIST, "favicon.webp"))
+
+    @app.get("/isuzu-logo.webp")
+    def isuzu_logo():
+        return FileResponse(os.path.join(_FRONTEND_DIST, "isuzu-logo.webp"))
+
+    @app.get("/isuzu-featured.webp")
+    def isuzu_featured():
+        return FileResponse(os.path.join(_FRONTEND_DIST, "isuzu-featured.webp"))
+
+    @app.get("/isuzu-icon.webp")
+    def isuzu_icon():
+        return FileResponse(os.path.join(_FRONTEND_DIST, "isuzu-icon.webp"))
+
+    # Catch-all: serve React index.html for all non-API, non-WS routes (SPA routing)
+    @app.get("/{full_path:path}")
+    def serve_react_app(full_path: str):
+        index_file = os.path.join(_FRONTEND_DIST, "index.html")
+        if os.path.isfile(index_file):
+            return FileResponse(index_file)
+        return {"error": "Frontend not built. Run: cd frontend && npm run build"}

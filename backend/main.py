@@ -79,7 +79,7 @@ app.add_middleware(
 )
 
 
-@app.get("/")
+@app.get("/api/status")
 def root():
     return {
         "system": "Dashboard Alarm BD – Phase 1 (Real-Time Monitoring Edition)",
